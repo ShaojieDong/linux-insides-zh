@@ -36,10 +36,16 @@
 
 [@woodpenker](http://github.com/woodpenker)
 
-[@tjm-1990](http://github.com/tjm-1990)
+@tjm-1990
 
 [@up2wing](https://github.com/up2wing)
 
 [@NeoCui](https://github.com/NeoCui)
 
 [@narcijie](https://github.com/narcijie)
+
+[@biopuppet](https://github.com/biopuppet)
+
+[@Albertchamberlain](https://github.com/Albertchamberlain)
+
+@nannxnann

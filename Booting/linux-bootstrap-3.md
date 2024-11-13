@@ -40,7 +40,7 @@ vga=<mode>
 
 根据上面的描述，我们可以通过将 `vga` 选项写入 grub 或者写到引导程序的配置文件，从而让内核命令行得到相应的显示模式设置信息。这个选项可以接受不同类型的值来表示相同的意思。比如你可以传入 0XFFFD 或者 ask，这2个值都表示需要显示一个菜单让用户选择想要的显示模式。下面的链接就给出了这个菜单：
 
-![video mode setup menu](http://oi59.tinypic.com/ejcz81.jpg)
+![video mode setup menu](images/video_mode_setup_menu.png)
 
 通过这个菜单，用户可以选择想要进入的显示模式。不过在我们进一步了解显示模式的设置过程之前，让我们先回头了解一些重要的概念。
 
@@ -606,7 +606,7 @@ jmpl	*%eax ;?jmpl cs:eax?
 
 如果你有任何的问题或者建议，你可以留言，也可以直接发消息给我[twitter](https://twitter.com/0xAX).
 
-**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/MintCN/linux-insides-zh) 。**
+**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/hust-open-atom-club/linux-insides-zh) 。**
 
 链接
 --------------------------------------------------------------------------------

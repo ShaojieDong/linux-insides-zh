@@ -4,7 +4,7 @@
 简介
 --------------------------------------------------------------------------------
 
-在 Linux 内核启动过程中的[第五部分](https://xinqiu.gitbooks.io/linux-insides-cn/content/Booting/linux-bootstrap-5.html)，我们学到了内核在启动的最早阶段都做了哪些工作。接下来，在我们明白内核如何运行第一个 init 进程之前，内核初始化其他部分，比如加载 `initrd` ，初始化 lockdep ，以及许多许多其他的工作。
+在 Linux 内核启动过程中的[第五部分](/Booting/linux-bootstrap-5.md)，我们学到了内核在启动的最早阶段都做了哪些工作。接下来，在我们明白内核如何运行第一个 init 进程之前，内核初始化其他部分，比如加载 `initrd` ，初始化 lockdep ，以及许多许多其他的工作。
 
 是的，那将有很多不同的事，但是还有更多更多更多关于**内存**的工作。
 
@@ -93,7 +93,7 @@ movl	%eax, %cr3
 
 按照图示，我们可以这样想象它：
 
-![四层分页](http://oi58.tinypic.com/207mb0x.jpg)
+![四层分页](images/4_level_paging.png)
 
 每一个对线性地址的访问不是一个管态访问就是用户态访问。这个访问是被 `CPL (Current Privilege Level)` 所决定。如果 `CPL < 3` ，那么它是管态访问级，否则，它就是用户态访问级。比如，最高级页表项包含访问位和如下的结构：
 
@@ -207,7 +207,7 @@ ffffffffffe00000 - ffffffffffffffff (=2 MB) unused hole
 #define __START_KERNEL_map      _AC(0xffffffff80000000, UL)
 ```
 
-通常内核的 `.text` 段开始于 `CONFIG_PHYSICAL_START` 偏移。我们已经在 [ELF64](https://github.com/MintCN/linux-insides-zh/blob/master/Theory/ELF.md) 相关帖子中看见。
+通常内核的 `.text` 段开始于 `CONFIG_PHYSICAL_START` 偏移。我们已经在 [ELF64](https://github.com/hust-open-atom-club/linux-insides-zh/blob/master/Theory/ELF.md) 相关帖子中看见。
 
 ```
 readelf -s vmlinux | grep ffffffff81000000
@@ -258,4 +258,4 @@ readelf -s vmlinux | grep ffffffff81000000
 * [MMU](http://en.wikipedia.org/wiki/Memory_management_unit)
 * [ELF64](https://github.com/0xAX/linux-insides/blob/master/Theory/ELF.md)
 * [Documentation/x86/x86_64/mm.txt](https://github.com/torvalds/linux/blob/master/Documentation/x86/x86_64/mm.txt)
-* [Last part - Kernel booting process](http://0xax.gitbooks.io/linux-insides/content/Booting/linux-bootstrap-5.html)
+* [Last part - Kernel booting process](/Booting/linux-bootstrap-5.md)

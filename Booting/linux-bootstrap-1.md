@@ -52,7 +52,7 @@ PhysicalAddress = Segment * 16 + Offset
 '0x10ffef'
 ```
 
-这超出 1MB 65519 字节。既然实模式下， CPU 只能访问 1MB 地址空间，`0x10ffef` 变成有 [A20](https://en.wikipedia.org/wiki/A20_line) 缺陷的 `0x00ffef`。
+这超出 1MB 65519 字节。既然实模式下， CPU 只能访问 1MB 地址空间，禁用 [A20线](https://en.wikipedia.org/wiki/A20_line) 后 `0x10ffef` 将变为 `0x00ffef`。
 
 我们了解了实模式和在实模式下的内存寻址方式，让我们来回头继续来看复位后的寄存器值。
 
@@ -69,7 +69,7 @@ PhysicalAddress = Segment * 16 + Offset
 '0xfffffff0'
 ```
 
-得到的 `0xfffffff0` 是 4GB - 16 字节。 这个地方是 [复位向量(Reset vector)](http://en.wikipedia.org/wiki/Reset_vector) 。 这是CPU在重置后期望执行的第一条指令的内存地址。它包含一个 [jump](http://en.wikipedia.org/wiki/JMP_%28x86_instruction%29) 指令，这个指令通常指向BIOS入口点。举个例子，如果访问 [coreboot](http://www.coreboot.org/) 源代码，将看到：
+得到的 `0xfffffff0` 是位于 4GB - 16 字节处的地址。 这个地方是 [复位向量(Reset vector)](http://en.wikipedia.org/wiki/Reset_vector) 。 这是CPU在重置后期望执行的第一条指令的内存地址。它包含一个 [jump](http://en.wikipedia.org/wiki/JMP_%28x86_instruction%29) 指令，这个指令通常指向BIOS入口点。举个例子，如果访问 [coreboot](http://www.coreboot.org/) 源代码，将看到：
 
 ```assembly
 	.section ".reset", "ax", %progbits
@@ -132,7 +132,7 @@ nasm -f bin boot.nasm && qemu-system-x86_64 boot
 
 将看到:
 
-![Simple bootloader which prints only `!`](http://oi60.tinypic.com/2qbwup0.jpg)
+![Simple bootloader which prints only `!`](images/simple_bootloader.png)
 
 在这个例子中，这段代码被执行在16位的实模式，起始于内存0x7c00。之后调用 [0x10](http://www.ctyme.com/intr/rb-0106.htm) 中断打印 `!` 符号。用0填充剩余的510字节并用两个Magic Bytes `0xaa` 和 `0x55` 结束。
 
@@ -209,7 +209,7 @@ hdr:
 
 bootloader必须填充在 Linux boot protocol 中标记为 `write` 的头信息，比如 [type_of_loader](http://lxr.free-electrons.com/source/Documentation/x86/boot.txt?v=3.18#L354)，这些头信息可能来自命令行，或者通过计算得到。在这里我们不会详细介绍所有的 kernel setup header，我们将在需要的时候逐个介绍。不过，你可以自己通过 [boot protocol](http://lxr.free-electrons.com/source/Documentation/x86/boot.txt?v=3.18#L156) 来了解这些设置。
 
-通过阅读 kernel boot protocol，在内核被引导入内存后，内存使用情况将入下表所示：
+通过阅读 kernel boot protocol，在内核被引导入内存后，内存使用情况将如下表所示：
 
 ```shell
          | Protected-mode kernel  |
@@ -245,7 +245,7 @@ X+08000  +------------------------+
 
 上面的公式中， `X` 是 kernel bootsector 被引导入内存的位置。在我的机器上， `X` 的值是 `0x10000`，我们可以通过 memory dump 来检查这个地址：
 
-![kernel first address](http://oi57.tinypic.com/16bkco2.jpg)
+![kernel first address](images/kernel_first_address.png)
 
 到这里，引导程序完成它的使命，并将控制权移交给了 Linux kernel。下面我们就来看看 kernel setup code 都做了些什么。
 
@@ -254,13 +254,13 @@ X+08000  +------------------------+
 
 经过上面的一系列操作，我们终于进入到内核了。不过从技术上说，内核还没有被运行起来，因为首先我们需要正确设置内核，启动内存管理，进程管理等等。内核设置代码的运行起点是 [arch/x86/boot/header.S](http://lxr.free-electrons.com/source/arch/x86/boot/header.S?v=3.18) 中定义的 [_start](http://lxr.free-electrons.com/source/arch/x86/boot/header.S?v=3.18#L293) 函数。 在 `_start` 函数开始之前，还有很多的代码，那这些代码是做什么的呢？
 
-实际上 `_start` 开始之前的代码是 kenerl 自带的 bootloader。在很久以前，是可以使用这个 bootloader 来启动 Linux 的。不过在新的 Linux 中，这个 bootloader 代码已经不再启动 Linux 内核，而只是输出一个错误信息。 如果你运行下面的命令，直接使用 Linux 内核来启动，你会看到下图所示的错误：
+实际上 `_start` 开始之前的代码是 kernel 自带的 bootloader。在很久以前，是可以使用这个 bootloader 来启动 Linux 的。不过在新的 Linux 中，这个 bootloader 代码已经不再启动 Linux 内核，而只是输出一个错误信息。 如果你运行下面的命令，直接使用 Linux 内核来启动，你会看到下图所示的错误：
 
 ```
 qemu-system-x86_64 vmlinuz-3.18-generic
 ```
 
-![Try vmlinuz in qemu](http://oi60.tinypic.com/r02xkz.jpg)
+![Try vmlinuz in qemu](images/try_vmlinuz_in_qemu.png)
 
 为了能够作为 bootloader 来使用, `header.S` 开始处定义了 [MZ] [MZ](https://en.wikipedia.org/wiki/DOS_MZ_executable) 魔术数字, 并且定义了  [PE](https://en.wikipedia.org/wiki/Portable_Executable) 头，在 PE 头中定义了输出的字符串：
 
@@ -336,12 +336,12 @@ cs = 0x1020
 段寄存器设置
 --------------------------------------------------------------------------------
 
-在代码的一开始，就将 `ds` 和 `es` 段寄存器的内容设置成一样，并且使用指令 `sti` 来允许中断发生：
+首先，内核保证将 `ds` 和 `es` 段寄存器指向相同地址，随后，使用 `cld` 指令来清理方向标志位：
 
 ```assembly
 	movw	%ds, %ax
 	movw	%ax, %es
-	sti
+	cld
 ```
 
 就像我在上面一节中所写的， 为了能够跳转到 `_start` 标号出执行代码，grub2 将 `cs` 段寄存器的值设置成了 `0x1020`，这个值和其他段寄存器都是不一样的，因此下面的代码就是将 `cs` 段寄存器的值和其他段寄存器一致：
@@ -387,7 +387,7 @@ cs = 0x1020
 
 这段代码首先将 `dx` 寄存器的值（就是当前`sp` 寄存器的值）4字节对齐，然后检查是否为0（如果是0，堆栈就不对了，因为堆栈是从大地址向小地址发展的），如果是0，那么就将 `dx` 寄存器的值设置成 `0xfffc` （64KB地址段的最后一个4字节地址）。如果不是0，那么就保持当前值不变。接下来，就将 `ax` 寄存器的值（ 0x10000 ）设置到 `ss` 寄存器，并根据 `dx` 寄存器的值设置正确的 `sp`。这样我们就得到了正确的堆栈设置，具体请参考下图：
 
-![stack](http://oi58.tinypic.com/16iwcis.jpg)
+![stack](images/stack1.png)
 
 * 下面让我们来看 `ss` != `ds`的情况，首先将 setup code 的结束地址 [_end](http://lxr.free-electrons.com/source/arch/x86/boot/setup.ld?v=3.18#L52) 写入 `dx` 寄存器。然后检查 `loadflags` 中是否设置了 `CAN_USE_HEAP` 标志。   根据 kernel boot protocol 的定义，[loadflags](http://lxr.free-electrons.com/source/arch/x86/boot/header.S?v=3.18#L321) 是一个标志字段。这个字段的 `Bit 7` 就是 `CAN_USE_HEAP` 标志：
 
@@ -413,11 +413,11 @@ Field name:	loadflags
 
 如果 `CAN_USE_HEAP` 被置位，那么将 `heap_end_ptr` 放入 `dx` 寄存器，然后加上 `STACK_SIZE` （最小堆栈大小是 512 bytes）。在加法完成之后，如果结果没有溢出（CF flag 没有置位，如果置位那么程序就出错了），那么就跳转到标号为 `2` 的代码处继续执行（这段代码的逻辑在1中已经详细介绍了），接着我们就得到了如下图所示的堆栈：
 
-![stack](http://oi62.tinypic.com/dr7b5w.jpg)
+![stack](images/stack2.png)
 
 * 最后一种情况就是 `CAN_USE_HEAP` 没有置位， 那么我们就将 `dx` 寄存器的值加上 `STACK_SIZE`，然后跳转到标号为 `2` 的代码处继续执行，接着我们就得到了如下图所示的堆栈：
 
-![minimal stack](http://oi60.tinypic.com/28w051y.jpg)
+![minimal stack](images/minimal_stack.png)
 
 BSS段设置
 --------------------------------------------------------------------------------
@@ -444,7 +444,7 @@ BSS 段用来存储那些没有被初始化的静态变量。对于这个段使�
 
 在这段代码中，首先将 [__bss_start](http://lxr.free-electrons.com/source/arch/x86/boot/setup.ld?v=3.18#L47) 地址放入 `di` 寄存器，然后将 `_end + 3` （4字节对齐） 地址放入 `cx`，接着使用 `xor` 指令将 `ax` 寄存器清零，接着计算 BSS 段的大小 （ `cx` - `di` ），然后将大小放入 `cx` 寄存器。接下来将 `cx` 寄存器除4，最后使用 `rep; stosl` 指令将 `ax` 寄存器的值（0）写入 寄存器整个 BSS 段。 代码执行完成之后，我们将得到如下图所示的 BSS 段:
 
-![bss](http://oi59.tinypic.com/29m2eyr.jpg)
+![bss](images/bss.png)
 
 跳转到 main 函数
 --------------------------------------------------------------------------------
@@ -452,7 +452,7 @@ BSS 段用来存储那些没有被初始化的静态变量。对于这个段使�
 到目前为止，我们完成了堆栈和 BSS 的设置，现在我们可以正式跳入 `main()` 函数来执行 C 代码了：
 
 ```assembly
-	calll main
+	call main
 ```
 
 `main()` 函数定义在 [arch/x86/boot/main.c](http://lxr.free-electrons.com/source/arch/x86/boot/main.c?v=3.18)，我们将在下一章详细介绍这个函数做了什么事情。
@@ -464,7 +464,7 @@ BSS 段用来存储那些没有被初始化的静态变量。对于这个段使�
 
 如果你有任何的问题或者建议，你可以留言，也可以直接发消息给我[twitter](https://twitter.com/0xAX)。
 
-**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/MintCN/linux-insides-zh) 。**
+**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/hust-open-atom-club/linux-insides-zh) 。**
 
 相关链接
 --------------------------------------------------------------------------------

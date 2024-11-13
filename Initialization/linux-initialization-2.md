@@ -4,9 +4,9 @@
 初期中断和异常处理
 --------------------------------------------------------------------------------
 
-在上一个 [部分](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-1.html) 我们谈到了初期中断初始化。目前我们已经处于解压缩后的Linux内核中了，还有了用于初期启动的基本的 [分页](https://en.wikipedia.org/wiki/Page_table) 机制。我们的目标是在内核的主体代码执行前做好准备工作。
+在上一个 [部分](/Initialization/linux-initialization-1.md) 我们谈到了初期中断初始化。目前我们已经处于解压缩后的Linux内核中了，还有了用于初期启动的基本的 [分页](https://en.wikipedia.org/wiki/Page_table) 机制。我们的目标是在内核的主体代码执行前做好准备工作。
 
-我们已经在 [本章](https://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/index.html) 的 [第一部分](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-1.html) 做了一些工作，在这一部分中我们会继续分析关于中断和异常处理部分的代码。
+我们已经在 [本章](/Initialization/) 的 [第一部分](/Initialization/linux-initialization-1.md) 做了一些工作，在这一部分中我们会继续分析关于中断和异常处理部分的代码。
 
 我们在上一部分谈到了下面这个循环：
 
@@ -480,7 +480,7 @@ pmd_p[pmd_index(address)] = pmd;
 
 本书的第二部分到此结束了。
 
-如果你有任何问题或建议，请在twitter上联系我 [0xAX](https://twitter.com/0xAX)，或者通过[邮件](anotherworldofworld@gmail.com)与我沟通，还可以新开[issue](https://github.com/MintCN/linux-insides-zh/issues/new)。
+如果你有任何问题或建议，请在twitter上联系我 [0xAX](https://twitter.com/0xAX)，或者通过[邮件](mailto:anotherworldofworld@gmail.com)与我沟通，还可以新开[issue](https://github.com/hust-open-atom-club/linux-insides-zh/issues/new)。
 
 接下来我们将会看到进入内核入口点 `start_kernel` 函数之前剩下所有的准备工作。
 
@@ -493,4 +493,4 @@ pmd_p[pmd_index(address)] = pmd;
 * [Page table](https://en.wikipedia.org/wiki/Page_table)
 * [Interrupt handler](https://en.wikipedia.org/wiki/Interrupt_handler)
 * [Page Fault](https://en.wikipedia.org/wiki/Page_fault),
-* [Previous part](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-1.html)
+* [Previous part](/Initialization/linux-initialization-1.md)

@@ -4,9 +4,9 @@ Linux 内核的同步原语. 第二部分.
 队列自旋锁
 --------------------------------------------------------------------------------
 
-这是本[章节](https://xinqiu.gitbooks.io/linux-insides-cn/content/SyncPrim/index.html)的第二部分，这部分描述 Linux 内核的和我们在本章的第一[部分](https://xinqiu.gitbooks.io/linux-insides-cn/content/SyncPrim/linux-sync-1.html)所见到的－－[自旋锁](https://en.wikipedia.org/wiki/Spinlock)的同步原语。在这个部分我们将继续学习自旋锁的同步原语。 如果阅读了上一部分的相关内容，你可能记得除了正常自旋锁，Linux 内核还提供`自旋锁`的一种特殊类型 - `队列自旋锁`。 在这个部分我们将尝试理解此概念锁代表的含义。
+这是本[章节](/SyncPrim/)的第二部分，这部分描述 Linux 内核的和我们在本章的第一[部分](/SyncPrim/linux-sync-1.md)所见到的－－[自旋锁](https://en.wikipedia.org/wiki/Spinlock)的同步原语。在这个部分我们将继续学习自旋锁的同步原语。 如果阅读了上一部分的相关内容，你可能记得除了正常自旋锁，Linux 内核还提供`自旋锁`的一种特殊类型 - `队列自旋锁`。 在这个部分我们将尝试理解此概念锁代表的含义。
 
-我们在上一[部分](https://xinqiu.gitbooks.io/linux-insides-cn/content/SyncPrim/linux-sync-1.html)已知`自旋锁`的 [API](https://en.wikipedia.org/wiki/Application_programming_interface):
+我们在上一[部分](/SyncPrim/linux-sync-1.md)已知`自旋锁`的 [API](https://en.wikipedia.org/wiki/Application_programming_interface):
 
 * `spin_lock_init` - 为给定`自旋锁`进行初始化；
 * `spin_lock` - 获取给定`自旋锁`；
@@ -95,12 +95,12 @@ int unlock(lock)
 
 第一个线程将执行 `test_and_set` 指令设置 `lock` 为 `1`。当第二个线程调用 `lock` 函数，它将在 `while` 循环中自旋，直到第一个线程调用 `unlock` 函数而且 `lock` 等于 `0`。这个实现对于执行不是很好，因为该实现至少有两个问题。第一个问题是该实现可能是非公平的而且一个处理器的线程可能有很长的等待时间，即使有其他线程也在等待释放锁，它还是调用了 `lock`。第二个问题是所有想要获取锁的线程，必须在共享内存的变量上执行很多类似`test_and_set` 这样的`原子`操作。这导致缓存失效，因为处理器缓存会存储 `lock=1`，但是在线程释放锁之后，内存中 `lock`可能只是`1`。
 
-在上一[部分](https://xinqiu.gitbooks.io/linux-insides-cn/content/SyncPrim/linux-sync-1.html) 我们了解了自旋锁的第二种实现 -
+在上一[部分](/SyncPrim/linux-sync-1.md) 我们了解了自旋锁的第二种实现 -
 `排队自旋锁(ticket spinlock)`。这一方法解决了第一个问题而且能够保证想要获取锁的线程的顺序，但是仍然存在第二个问题。
 
 这一部分的主旨是 `队列自旋锁`。这个方法能够帮助解决上述的两个问题。`队列自旋锁`允许每个处理器对自旋过程使用他自己的内存地址。通过学习名为 [MCS](http://www.cs.rochester.edu/~scott/papers/1991_TOCS_synch.pdf) 锁的这种基于队列自旋锁的实现，能够最好理解基于队列自旋锁的基本原则。在了解`队列自旋锁`的实现之前，我们先尝试理解什么是 `MCS` 锁。
 
-`MCS`锁的基本理念就在上一段已经写到了，一个线程在本地变量上自旋然后每个系统的处理器自己拥有这些变量的拷贝。换句话说这个概念建立在 Linux 内核中的 [per-cpu](https://xinqiu.gitbooks.io/linux-insides-cn/content/Concepts/linux-cpu-1.html) 变量概念之上。
+`MCS`锁的基本理念就在上一段已经写到了，一个线程在本地变量上自旋然后每个系统的处理器自己拥有这些变量的拷贝。换句话说这个概念建立在 Linux 内核中的 [per-cpu](/Concepts/linux-cpu-1.md) 变量概念之上。
 
 当第一个线程想要获取锁，线程在`队列`中注册了自身，或者换句话说，因为线程现在是闲置的，线程要加入特殊`队列`并且获取锁。当第二个线程想要在第一个线程释放锁之前获取相同锁，这个线程就会把他自身的所变量的拷贝加入到这个特殊`队列`中。这个例子中第一个线程会包含一个 `next` 字段指向第二个线程。从这一时刻，第二个线程会等待直到第一个线程释放它的锁并且关于这个事件通知给 `next` 线程。第一个线程从`队列`中删除而第二个线程持有该锁。
 
@@ -268,7 +268,7 @@ static __always_inline void queued_spin_lock(struct qspinlock *lock)
 }
 ```
 
-看起来很简单，除了 `queued_spin_lock_slowpath` 函数，我们可能发现它只有一个参数。在我们的例子中这个参数代表 `队列自旋锁` 被上锁。让我们考虑`队列`锁为空，现在第一个线程想要获取锁的情况。正如我们可能了解的 `queued_spin_lock` 函数从调用 `atomic_cmpxchg_acquire` 宏开始。就像你们可能从宏的名字猜到的那样，它执行原子的 [CMPXCHG](http://x86.renejeschke.de/html/file_module_x86_id_41.html) 指令，使用第一个参数（当前给定自旋锁的状态）比较第二个参数（在我们的例子为零）的值，如果他们相等，那么第二个参数在存储位置保存 `_Q_LOCKED_VAL` 的值，该存储位置通过 `&lock->val` 指向并且返回这个存储位置的初始值。
+看起来很简单，除了 `queued_spin_lock_slowpath` 函数，我们可能发现它只有一个参数。在我们的例子中这个参数代表 `队列自旋锁` 被上锁。让我们考虑`队列`锁为空，现在第一个线程想要获取锁的情况。正如我们可能了解的 `queued_spin_lock` 函数从调用 `atomic_cmpxchg_acquire` 宏开始。就像你们可能从宏的名字猜到的那样，它执行原子的 [CMPXCHG](https://x86.hust.openatom.club/html/file_module_x86_id_41.html) 指令，使用第一个参数（当前给定自旋锁的状态）比较第二个参数（在我们的例子为零）的值，如果他们相等，那么第二个参数在存储位置保存 `_Q_LOCKED_VAL` 的值，该存储位置通过 `&lock->val` 指向并且返回这个存储位置的初始值。
 
 `atomic_cmpxchg_acquire` 宏定义在 [include/linux/atomic.h](https://github.com/torvalds/linux/blob/master/include/linux/atomic.h) 头文件中并且扩展了 `atomic_cmpxchg` 函数的调用：
 
@@ -294,7 +294,7 @@ static __always_inline int atomic_cmpxchg(atomic_t *v, int old, int new)
     __raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
 ```
 
-就像我们可能了解的那样，`cmpxchg` 宏使用几乎相同的参数集合扩展了 `__cpmxchg` 宏。新添加的参数是原子值的大小。`__cpmxchg` 宏添加了 `LOCK_PREFIX`，还扩展了 `__raw_cmpxchg` 宏中 `LOCK_PREFIX`的 [LOCK](http://x86.renejeschke.de/html/file_module_x86_id_159.html)指令。毕竟 `__raw_cmpxchg` 对我们来说做了所有的的工作：
+就像我们可能了解的那样，`cmpxchg` 宏使用几乎相同的参数集合扩展了 `__cpmxchg` 宏。新添加的参数是原子值的大小。`__cpmxchg` 宏添加了 `LOCK_PREFIX`，还扩展了 `__raw_cmpxchg` 宏中 `LOCK_PREFIX`的 [LOCK](https://x86.hust.openatom.club/html/file_module_x86_id_159.html)指令。毕竟 `__raw_cmpxchg` 对我们来说做了所有的的工作：
 
 ```C
 #define __raw_cmpxchg(ptr, old, new, size, lock) \
@@ -443,7 +443,7 @@ if (next)
 	prefetchw(next);
 ```
 
-如果新节点被添加，我们从通过使用 [PREFETCHW](http://www.felixcloutier.com/x86/PREFETCHW.html) 指令指出下一个队列实体的内存中预先去除缓存线（cache line）。以优化为目的我们现在预先载入这个指针。我们只是改变了队列的头而这意味着有将要到来的 `MCS` 进行解锁操作并且下一个实体会被创建。
+如果新节点被添加，我们从通过使用 [PREFETCHW](https://www.felixcloutier.com/x86/PREFETCHW.html) 指令指出下一个队列实体的内存中预先去除缓存线（cache line）。以优化为目的我们现在预先载入这个指针。我们只是改变了队列的头而这意味着有将要到来的 `MCS` 进行解锁操作并且下一个实体会被创建。
 
 是的，从这个时刻我们在`队列`的头部。但是在我们有能力获取锁之前，我们需要至少等待两个事件：当前锁的拥有者释放锁和第二个线程处于`待定`位也获取锁：
 
@@ -458,9 +458,9 @@ smp_cond_acquire(!((val = atomic_read(&lock->val)) & _Q_LOCKED_PENDING_MASK));
 总结
 --------------------------------------------------------------------------------
 
-这是 Linux 内核[同步原语](https://en.wikipedia.org/wiki/Synchronization_%28computer_science%29)章节第二部分的结尾。在上一个[部分](https://xinqiu.gitbooks.io/linux-insides-cn/content/SyncPrim/linux-sync-1.html)我们已经见到了第一个同步原语`自旋锁`通过 Linux 内核 实现的`排队自旋锁（ticket spinlock）`。在这个部分我们了解了另一个`自旋锁`机制的实现 - `队列自旋锁`。下一个部分我们继续深入 Linux 内核同步原语。
+这是 Linux 内核[同步原语](https://en.wikipedia.org/wiki/Synchronization_%28computer_science%29)章节第二部分的结尾。在上一个[部分](/SyncPrim/linux-sync-1.md)我们已经见到了第一个同步原语`自旋锁`通过 Linux 内核 实现的`排队自旋锁（ticket spinlock）`。在这个部分我们了解了另一个`自旋锁`机制的实现 - `队列自旋锁`。下一个部分我们继续深入 Linux 内核同步原语。
 
-如果您有疑问或者建议，请在twitter [0xAX](https://twitter.com/0xAX) 上联系我，通过 [email](anotherworldofworld@gmail.com) 联系我，或者创建一个 [issue](https://github.com/0xAX/linux-insides/issues/new).
+如果您有疑问或者建议，请在twitter [0xAX](https://twitter.com/0xAX) 上联系我，通过 [email](mailto:anotherworldofworld@gmail.com) 联系我，或者创建一个 [issue](https://github.com/0xAX/linux-insides/issues/new).
 
 **友情提示：英语不是我的母语，对于译文给您带来了的不便我感到非常抱歉。如果您发现任何错误请给我发送PR到 [linux-insides](https://github.com/0xAX/linux-insides)。**
 
@@ -473,11 +473,11 @@ smp_cond_acquire(!((val = atomic_read(&lock->val)) & _Q_LOCKED_PENDING_MASK));
 * [API](https://en.wikipedia.org/wiki/Application_programming_interface)
 * [Test and Set](https://en.wikipedia.org/wiki/Test-and-set)
 * [MCS](http://www.cs.rochester.edu/~scott/papers/1991_TOCS_synch.pdf)
-* [per-cpu variables](https://xinqiu.gitbooks.io/linux-insides-cn/content/Concepts/linux-cpu-1.html)
+* [per-cpu variables](/Concepts/linux-cpu-1.md)
 * [atomic instruction](https://en.wikipedia.org/wiki/Linearizability)
-* [CMPXCHG instruction](http://x86.renejeschke.de/html/file_module_x86_id_41.html)
-* [LOCK instruction](http://x86.renejeschke.de/html/file_module_x86_id_159.html)
+* [CMPXCHG instruction](https://x86.hust.openatom.club/html/file_module_x86_id_41.html)
+* [LOCK instruction](https://x86.hust.openatom.club/html/file_module_x86_id_159.html)
 * [NOP instruction](https://en.wikipedia.org/wiki/NOP)
-* [PREFETCHW instruction](http://www.felixcloutier.com/x86/PREFETCHW.html)
+* [PREFETCHW instruction](https://www.felixcloutier.com/x86/PREFETCHW.html)
 * [x86_64](https://en.wikipedia.org/wiki/X86-64)
-* [Previous part](https://xinqiu.gitbooks.io/linux-insides-cn/content/SyncPrim/linux-sync-1.html)
+* [Previous part](/SyncPrim/linux-sync-1.md)

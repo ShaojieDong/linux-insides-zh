@@ -329,7 +329,7 @@ archscripts: scripts_basic
 
 我们可以看到 `archscripts` 是依赖于根 [Makefile](https://github.com/torvalds/linux/blob/master/Makefile) 里的 `scripts_basic` 。首先我们可以看出 `scripts_basic` 是按照 [scripts/basic](https://github.com/torvalds/linux/blob/master/scripts/basic/Makefile) 的 Makefile 执行 make 的：
  
-```Maklefile
+```Makefile
 scripts_basic:
 	$(Q)$(MAKE) $(build)=scripts/basic
 ```
@@ -676,7 +676,7 @@ Kernel: arch/x86/boot/bzImage is ready  (#5)
 * [uname](https://en.wikipedia.org/wiki/Uname)
 * [shell](https://en.wikipedia.org/wiki/Shell_%28computing%29)
 * [Kbuild](https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kbuild.txt)
-* [binutils](http://www.gnu.org/software/binutils/)
+* [binutils](https://www.gnu.org/software/binutils/)
 * [gcc](https://gcc.gnu.org/)
 * [Documentation](https://github.com/torvalds/linux/blob/master/Documentation/kbuild/makefiles.txt)
 * [System.map](https://en.wikipedia.org/wiki/System.map)

@@ -4,7 +4,7 @@
 简介
 --------------------------------------------------------------------------------
 
-这是 [linux 内核揭密](http://0xax.gitbooks.io/linux-insides/content/) 的新一章的第一部分。你可以根据这部分的标题猜测 - 这一部分将涉及 Linux 内核中的 [`控制组`](https://en.wikipedia.org/wiki/Cgroups) 或 `cgroups` 机制。
+这是 [linux 内核揭秘](/) 的新一章的第一部分。你可以根据这部分的标题猜测 - 这一部分将涉及 Linux 内核中的 [`控制组`](https://en.wikipedia.org/wiki/Cgroups) 或 `cgroups` 机制。
 
 `Cgroups` 是由 Linux 内核提供的一种机制，它允许我们分配诸如处理器时间、每组进程的数量、每个 `cgroup` 的内存大小，或者针对一个或一组进程的上述资源的组合。`Cgroups` 是按照层级结构组织的，这种机制类似于通常的进程，他们也是层级结构，并且子 `cgroups` 会继承其上级的一些属性。但实际上他们还是有区别的。`cgroups` 和进程之间的主要区别在于，多个不同层级的 `cgroup` 可以同时存在，而进程树则是单一的。同时存在的多个不同层级的 `cgroup` 并不是任意的，因为每个 `cgroup` 层级都要附加到一组 `cgroup` "子系统"中。
 
@@ -25,7 +25,7 @@
 
 每个 `cgroup` 子系统是否被支持均与相关配置选项有关。例如，`cpuset` 子系统应该通过 `CONFIG_CPUSETS` 内核配置选项启用，`io` 子系统通过 `CONFIG_BLK_CGROUP` 内核配置选项等。所有这些内核配置选项都可以在 `General setup → Control Group support` 菜单里找到：
 
-![menuconfig](http://oi66.tinypic.com/2rc2a9e.jpg)
+![menuconfig](images/menuconfig.png)
 
 你可以通过 [proc](https://en.wikipedia.org/wiki/Procfs) 虚拟文件系统在计算机上查看已经启用的 `cgroup`：
 
@@ -435,7 +435,7 @@ struct cgroup_subsys cpuset_cgrp_subsys = {
 
 * [control groups](https://en.wikipedia.org/wiki/Cgroups)
 * [PID](https://en.wikipedia.org/wiki/Process_identifier)
-* [cpuset](http://man7.org/linux/man-pages/man7/cpuset.7.html)
+* [cpuset](https://man7.org/linux/man-pages/man7/cpuset.7.html)
 * [block devices](https://en.wikipedia.org/wiki/Device_file)
 * [huge pages](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt)
 * [sysfs](https://en.wikipedia.org/wiki/Sysfs)
@@ -445,4 +445,4 @@ struct cgroup_subsys cpuset_cgrp_subsys = {
 * [bash](https://www.gnu.org/software/bash/)
 * [docker](https://en.wikipedia.org/wiki/Docker_\(software\))
 * [perf events](https://en.wikipedia.org/wiki/Perf_\(Linux\))
-* [Previous chapter](https://0xax.gitbooks.io/linux-insides/content/MM/linux-mm-1.html)
+* [Previous chapter](/MM/linux-mm-1.md)

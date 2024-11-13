@@ -4,7 +4,7 @@
 Kernel entry point
 ================================================================================
 
-还记得上一章的内容吗 - [跳转到内核入口之前的最后准备](https://github.com/MintCN/linux-insides-zh/blob/master/Initialization/linux-initialization-3.md)？你应该还记得我们已经完成一系列初始化操作，并停在了调用位于`init/main.c`中的`start_kernel`函数之前.`start_kernel`函数是与体系架构无关的通用处理入口函数，尽管我们在此初始化过程中要无数次的返回arch/ 文件夹。如果你仔细看看`start_kernel`函数的内容，你将发现此函数涉及内容非常广泛。在此过程中约包含了86个调用函数，是的，你发现它真的是非常庞大但是此部分并不是全部的初始化过程，在当前阶段我们只看这些就可以了。此章节以及后续所有在[内核初始化过程](https://github.com/MintCN/linux-insides-zh/blob/master/Initialization/README.md)章节的内容将涉及并详述它。
+还记得上一章的内容吗 - [跳转到内核入口之前的最后准备](/Initialization/linux-initialization-3.md)？你应该还记得我们已经完成一系列初始化操作，并停在了调用位于`init/main.c`中的`start_kernel`函数之前.`start_kernel`函数是与体系架构无关的通用处理入口函数，尽管我们在此初始化过程中要无数次的返回arch/ 文件夹。如果你仔细看看`start_kernel`函数的内容，你将发现此函数涉及内容非常广泛。在此过程中约包含了86个调用函数，是的，你发现它真的是非常庞大但是此部分并不是全部的初始化过程，在当前阶段我们只看这些就可以了。此章节以及后续所有在[内核初始化过程](/Initialization/)章节的内容将涉及并详述它。
 
 `start_kernel`函数的主要目的是完成内核初始化并启动祖先进程(1号进程)。在祖先进程启动之前`start_kernel`函数做了很多事情，如[锁验证器](https://www.kernel.org/doc/Documentation/locking/lockdep-design.txt),根据处理器标识ID初始化处理器，开启cgroups子系统，设置每CPU区域环境，初始化[VFS](http://en.wikipedia.org/wiki/Virtual_file_system) Cache机制，初始化内存管理，rcu,vmalloc,scheduler(调度器),IRQs(中断向量表),ACPI(中断可编程控制器)以及其它很多子系统。只有经过这些步骤我们才看到本章最后一部分祖先进程启动的过程；同志们，如此复杂的内核子系统，有没有勾起你的学习欲望，有这么多的内核代码等着我们去征服，让我们开始吧。
 
@@ -49,7 +49,7 @@ char *after_dashes;
 lockdep_init();
 ```
 
-`lockdep_init` 初始化 [lock validator](https://www.kernel.org/doc/Documentation/locking/lockdep-design.txt). 其实现是相当简单的，它只是初始化了两个哈希表 [list_head](https://github.com/MintCN/linux-insides-zh/blob/master/DataStructures/linux-datastructures-1.md)并设置`lockdep_initialized` 全局变量为`1`。
+`lockdep_init` 初始化 [lock validator](https://www.kernel.org/doc/Documentation/locking/lockdep-design.txt). 其实现是相当简单的，它只是初始化了两个哈希表 [list_head](https://github.com/hust-open-atom-club/linux-insides-zh/blob/master/DataStructures/linux-datastructures-1.md)并设置`lockdep_initialized` 全局变量为`1`。
 关于自旋锁 [spinlock](http://en.wikipedia.org/wiki/Spinlock)以及互斥锁[mutex](http://en.wikipedia.org/wiki/Mutual_exclusion) 如何获取请参考链接.
 
 下一个函数是`set_task_stack_end_magic`，参数为`init_task`和设置`STACK_END_MAGIC` (`0x57AC6E9D`)。`init_task`代表初始化进程(任务)数据结构:
@@ -57,7 +57,7 @@ lockdep_init();
 ```C
 struct task_struct init_task = INIT_TASK(init_task);
 ```
-`task_struct` 存储了进程的所有相关信息。因为它很庞大，我在这本书并不会去介绍，详细信息你可以查看调度相关数据结构定义头文件 [include/linux/sched.h](https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L1278)。在此刻`task_sreuct`包含了超过`100`个字段！虽然你不会看到`task_struct`是在这本书中的解释，但是我们会经常使用它，因为它是介绍在Linux内核`进程`的基本知识。我将描述这个结构中字段的一些含义，因为我们在后面的实践中见到它们。
+`task_struct` 存储了进程的所有相关信息。因为它很庞大，我在这本书并不会去介绍，详细信息你可以查看调度相关数据结构定义头文件 [include/linux/sched.h](https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L1278)。在此刻`task_struct`包含了超过`100`个字段！虽然你不会在这本书中看到关于`task_struct`的解释，但是我们会经常使用它，因为它是介绍在Linux内核`进程`的基本知识。我将描述这个结构中字段的一些含义，因为我们在后面的实践中见到它们。
 
 你也可以查看`init_task`的相关定义以及宏指令`INIT_TASK`的初始化流程。这个宏指令来自于[include/linux/init_task.h](https://github.com/torvalds/linux/blob/master/include/linux/init_task.h)在此刻只是设置和初始化了第一个进程来(0号进程)的值。例如这么设置：
 * 初始化进程状态为 zero 或者 `runnable`. 一个可运行进程即为等待CPU去运行;
@@ -182,7 +182,7 @@ current->stack_canary = canary;
 this_cpu_write(irq_stack_union.stack_canary, canary); // read below about this_cpu_write
 ```
 
-关于IRQ的章节我们这里也不会详细刨析, 关于这部分介绍看这里[IRQs](http://en.wikipedia.org/wiki/Interrupt_request_%28PC_architecture%29).如果canary被设置, 关闭本地中断注册bootstrap CPU以及CPU maps. 我们关闭本地中断 (interrupts for current CPU) 使用 `local_irq_disable` 函数，展开后原型为 `arch_local_irq_disable` 函数[include/linux/percpu-defs.h](https://github.com/torvalds/linux/blob/master/include/linux/percpu-defs.h):
+关于IRQ的章节我们这里也不会详细剖析, 关于这部分介绍看这里[IRQs](http://en.wikipedia.org/wiki/Interrupt_request_%28PC_architecture%29).如果canary被设置, 关闭本地中断注册bootstrap CPU以及CPU maps. 我们关闭本地中断 (interrupts for current CPU) 使用 `local_irq_disable` 函数，展开后原型为 `arch_local_irq_disable` 函数[include/linux/percpu-defs.h](https://github.com/torvalds/linux/blob/master/include/linux/percpu-defs.h):
 
 ```C
 static inline notrace void arch_local_irq_enable(void)
@@ -208,7 +208,7 @@ int cpu = smp_processor_id();
 #define raw_smp_processor_id() (this_cpu_read(cpu_number))
 ```
 
-`this_cpu_read` 函数与其它很多函数一样如(`this_cpu_write`, `this_cpu_add` 等等...) 被定义在[include/linux/percpu-defs.h](https://github.com/torvalds/linux/blob/master/include/linux/percpu-defs.h) 此部分函数主要为对 `this_cpu` 进行操作. 这些操作提供不同的对每cpu[per-cpu](http://xinqiu.gitbooks.io/linux-insides-cn/content/Concepts/linux-cpu-1.html) 变量相关访问方式. 譬如让我们来看看这个函数 `this_cpu_read`:
+`this_cpu_read` 函数与其它很多函数一样如(`this_cpu_write`, `this_cpu_add` 等等...) 被定义在[include/linux/percpu-defs.h](https://github.com/torvalds/linux/blob/master/include/linux/percpu-defs.h) 此部分函数主要为对 `this_cpu` 进行操作. 这些操作提供不同的对每cpu[per-cpu](/Concepts/linux-cpu-1.md) 变量相关访问方式. 譬如让我们来看看这个函数 `this_cpu_read`:
 
 ```
 __pcpu_size_call_return(this_cpu_read_, pcp)
@@ -311,7 +311,7 @@ static inline int __check_is_bitmap(const unsigned long *bitmap)
 
 原来此函数始终返回1，事实上我们需要这样的函数才达到我们的目的： 它在编译时给定一个`bitmap`，换句话将就是检查`bitmap`的类型是否是`unsigned long *`,因此我们仅仅通过`to_cpumask`宏指令将类型为`unsigned long`的数组转化为`struct cpumask *`。现在我们可以调用`cpumask_set_cpu` 函数，这个函数仅仅是一个 `set_bit`给CPU掩码的功能函数。所有的这些`set_cpu_*`函数的原理都是一样的。
 
-如果你还不确定`set_cpu_*`这些函数的操作并且不能理解 `cpumask`的概念，不要担心。你可以通过读取这些章节[cpumask](https://xinqiu.gitbooks.io/linux-insides-cn/content/Concepts/linux-cpu-2.html) or [documentation](https://www.kernel.org/doc/Documentation/cpu-hotplug.txt).来继续了解和学习这些函数的原理。
+如果你还不确定`set_cpu_*`这些函数的操作并且不能理解 `cpumask`的概念，不要担心。你可以通过读取这些章节[cpumask](/Concepts/linux-cpu-2.md) or [documentation](https://www.kernel.org/doc/Documentation/cpu-hotplug.txt).来继续了解和学习这些函数的原理。
 
 现在我们已经激活第一个CPU，我们继续接着start_kernel函数往下走，下面的函数是`page_address_init`,但是此函数不执行任何操作，因为只有当所有内存不能直接映射的时候才会执行。
 
@@ -349,7 +349,7 @@ Linux version 4.0.0-rc6+ (alex@localhost) (gcc version 4.9.1 (Ubuntu 4.9.1-16ubu
 memblock_reserve(__pa_symbol(_text), (unsigned long)__bss_stop - (unsigned long)_text);
 ```
 
-你可以阅读关于`memblock`的相关内容在[Linux kernel memory management Part 1.](http://xinqiu.gitbooks.io/linux-insides-cn/content/MM/linux-mm-1.html)，你应该还记得`memblock_reserve`函数的两个参数：
+你可以阅读关于`memblock`的相关内容在[Linux kernel memory management Part 1.](/MM/linux-mm-1.md)，你应该还记得`memblock_reserve`函数的两个参数：
 
 * base physical address of a memory block;
 * size of a memory block.
@@ -374,7 +374,7 @@ memblock_reserve(__pa_symbol(_text), (unsigned long)__bss_stop - (unsigned long)
 保留可用内存初始化initrd
 ---------------------------------------------------------------------------------
 
-之后我们保留替换内核的text和data段用来初始化[initrd](http://en.wikipedia.org/wiki/Initrd),我们暂时不去了解initrd的详细信息，你仅仅只需要知道根文件系统就是通过这方式来进行初始化这就是`early_reserve_initrd` 函数的工作，此函数获取RAM DISK的基地址以及大小以及大小加偏移。
+之后我们保留替换内核的text和data段用来初始化[initrd](http://en.wikipedia.org/wiki/Initrd),我们暂时不去了解initrd的详细信息，你仅仅只需要知道根文件系统就是通过这种方式来进行初始化，这就是`early_reserve_initrd` 函数的工作，此函数获取RAM DISK的基地址、RAM DISK的大小以及RAM DISK的结束地址。
 
 ```C
 u64 ramdisk_image = get_ramdisk_image();
@@ -382,7 +382,7 @@ u64 ramdisk_size  = get_ramdisk_size();
 u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
 ```
 
-如果你阅读过这些章节[Linux Kernel Booting Process](http://xinqiu.gitbooks.io/linux-insides-cn/content/Booting/index.html)，你就知道所有的这些啊参数都来自于`boot_params`，时刻谨记`boot_params`在boot期间已经被赋值，内核启动头包含了一下几个字段用来描述RAM DISK：
+如果你阅读过这些章节[Linux Kernel Booting Process](/Booting/)，你就知道所有的这些参数都来自于`boot_params`，时刻谨记`boot_params`在boot期间已经被赋值，内核启动头包含了一下几个字段用来描述RAM DISK：
 ```
 Field name:	ramdisk_image
 Type:		write (obligatory)
@@ -434,7 +434,7 @@ memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
 
 如果你有任何的问题或者建议，你可以留言，也可以直接发消息给我[twitter](https://twitter.com/0xAX)。
 
-**很抱歉，英语并不是我的母语，非常抱歉给您阅读带来不便，如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides](https://github.com/MintCN/linux-insides-zh).**
+**很抱歉，英语并不是我的母语，非常抱歉给您阅读带来不便，如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/hust-open-atom-club/linux-insides-zh).**
 
 链接
 --------------------------------------------------------------------------------
@@ -447,4 +447,4 @@ memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
 * [stack buffer overflow](http://en.wikipedia.org/wiki/Stack_buffer_overflow)
 * [IRQs](http://en.wikipedia.org/wiki/Interrupt_request_%28PC_architecture%29)
 * [initrd](http://en.wikipedia.org/wiki/Initrd)
-* [Previous part](https://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-3.html)
+* [Previous part](/Initialization/linux-initialization-3.md)

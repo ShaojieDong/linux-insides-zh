@@ -136,7 +136,7 @@ Be careful parts of head_64.S assume startup_32 is at address 0.
 
 好了，现在我们知道我们在哪里了，接下来就是深入 `startup_32` 函数的最佳时机。
 
-在 `startup_32` 函数的开始，我们可以看到 `cld` 指令将[标志寄存器](http://baike.baidu.com/view/1845107.htm)的 `DF` （方向标志）位清空。当方向标志被清空，所有的串操作指令像[stos](http://x86.renejeschke.de/html/file_module_x86_id_306.html)， [scas](http://x86.renejeschke.de/html/file_module_x86_id_287.html)等等将会增加索引寄存器 `esi` 或者 `edi` 的值。我们需要清空方向标志是因为接下来我们会使用汇编的串操作指令来做为页表腾出空间等工作。
+在 `startup_32` 函数的开始，我们可以看到 `cld` 指令将[标志寄存器](http://baike.baidu.com/view/1845107.htm)的 `DF` （方向标志）位清空。当方向标志被清空，所有的串操作指令像[stos](https://x86.hust.openatom.club/html/file_module_x86_id_306.html)， [scas](https://x86.hust.openatom.club/html/file_module_x86_id_287.html)等等将会增加索引寄存器 `esi` 或者 `edi` 的值。我们需要清空方向标志是因为接下来我们会使用汇编的串操作指令来做为页表腾出空间等工作。
 
 在我们清空 `DF` 标志后，下一步就是从内核加载头中的 `loadflags` 字段来检查 `KEEP_SEGMENTS` 标志。你是否还记得在本书的[最初一节](linux-bootstrap-1.md)，我们已经看到过 `loadflags` 。在那里我们检查了 `CAN_USE_HEAP` 标记以使用堆。现在我们需要检查 `KEEP_SEGMENTS` 标记。这些标记在 linux 的[引导协议](https://www.kernel.org/doc/Documentation/x86/boot.txt)文档中有描述：
 
@@ -478,7 +478,7 @@ pgtable:
 	movl	%eax, 0(%edi)
 ```
 
-还是在这里，我们把和 `ebx` 相关的，或者说和 `startup_32` 相关的 `pgtable` 的地址放到 `ebi` 寄存器。接下来我们把相对此地址偏移 `0x1007` 的地址放到 `eax` 寄存器中。 `0x1007` 是 `PML4` 的大小 `4096` 加上 `7` 。这里的 `7` 代表了 `PML4` 的项标记。在我们这里，这些标记是 `PRESENT+RW+USER` 。在最后我们把第一个 `PDP（页目录指针）` 项的地址写到 `PML4` 中。
+还是在这里，我们把和 `ebx` 相关的，或者说和 `startup_32` 相关的 `pgtable` 的地址放到 `edi` 寄存器。接下来我们把相对此地址偏移 `0x1007` 的地址放到 `eax` 寄存器中。 `0x1007` 是 `PML4` 的大小 `4096` 加上 `7` 。这里的 `7` 代表了 `PML4` 的项标记。在我们这里，这些标记是 `PRESENT+RW+USER` 。在最后我们把第一个 `PDP（页目录指针）` 项的地址写到 `PML4` 中。
 
 在接下来的一步，我们将会在 `页目录指针（PDP）` 表（3级页表）建立 4 个带有 `PRESENT+RW+USE` 标记的 `Page Directory （2级页表）` 项：
 
@@ -579,7 +579,7 @@ ENTRY(startup_64)
 
 下一节我们将会看到内核解压缩流程和其他更多。
 
-**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/MintCN/linux-insides-zh) 。**
+**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/hust-open-atom-club/linux-insides-zh) 。**
 
 相关链接
 --------------------------------------------------------------------------------

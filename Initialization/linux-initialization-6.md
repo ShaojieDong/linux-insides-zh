@@ -4,7 +4,7 @@
 仍旧是与系统架构有关的初始化
 ===========================================================  
 
-在之前的[章节](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-5.html)我们从 [arch/x86/kernel/setup.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/setup.c)了解了特定于系统架构的初始化事务(在我们的例子中是 `x86_64` 架构)，并且通过 `x86_configure_nx` 函数根据对[NX bit](http://en.wikipedia.org/wiki/NX_bit)的支持配置了 `_PAGE_NX` 标志位。正如我之前写的, `setup_arch` 函数和 `start_kernel` 都非常复杂，所以在这个和下个章节我们将继续学习关于系统架构初始化进程的内容。`x86_configure_nx` 函数的下面是 `parse_early_param` 函数。这个函数定义在 [init/main.c](https://github.com/torvalds/linux/blob/master/init/main.c) 中并且你可以从它的名字中了解到，这个函数解析内核命令行并且基于给定的参数创建不同的服务 (所有的内核命令行参数你都可以在 [Documentation/kernel-parameters.txt](https://github.com/torvalds/linux/blob/master/Documentation/kernel-parameters.txt) 找到)。 你可能记得在最前面的 [章节](http://xinqiu.gitbooks.io/linux-insides-cn/content/Booting/linux-bootstrap-2.html) 我们是怎样创建 `earlyprintk`地。在前面我们用 [arch/x86/boot/cmdline.c](https://github.com/torvalds/linux/blob/master/arch/x86/boot/cmdline.c) 里面的 `cmdline_find_option` 和 `__cmdline_find_option`, `__cmdline_find_option_bool` 函数的帮助下寻找内核参数及其值。我们在通用内核部分不依赖于特定的系统架构，在这里我们使用另一种方法。 如果你正在阅读linux内核源代码，你可能注意到这样的调用：
+在之前的[章节](/Initialization/linux-initialization-5.md)我们从 [arch/x86/kernel/setup.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/setup.c)了解了特定于系统架构的初始化事务(在我们的例子中是 `x86_64` 架构)，并且通过 `x86_configure_nx` 函数根据对[NX bit](http://en.wikipedia.org/wiki/NX_bit)的支持配置了 `_PAGE_NX` 标志位。正如我之前写的, `setup_arch` 函数和 `start_kernel` 都非常复杂，所以在这个和下个章节我们将继续学习关于系统架构初始化进程的内容。`x86_configure_nx` 函数的下面是 `parse_early_param` 函数。这个函数定义在 [init/main.c](https://github.com/torvalds/linux/blob/master/init/main.c) 中并且你可以从它的名字中了解到，这个函数解析内核命令行并且基于给定的参数创建不同的服务 (所有的内核命令行参数你都可以在 [Documentation/kernel-parameters.txt](https://github.com/torvalds/linux/blob/master/Documentation/kernel-parameters.txt) 找到)。 你可能记得在最前面的 [章节](/Booting/linux-bootstrap-2.md) 我们是怎样创建 `earlyprintk`地。在前面我们用 [arch/x86/boot/cmdline.c](https://github.com/torvalds/linux/blob/master/arch/x86/boot/cmdline.c) 里面的 `cmdline_find_option` 和 `__cmdline_find_option`, `__cmdline_find_option_bool` 函数的帮助下寻找内核参数及其值。我们在通用内核部分不依赖于特定的系统架构，在这里我们使用另一种方法。 如果你正在阅读linux内核源代码，你可能注意到这样的调用：
 
 ```C
 early_param("gbpages", parse_direct_gbpages_on);
@@ -94,7 +94,7 @@ noexec		[X86]
 
 我们可以在启动的时候看到:
 
-![NX](http://oi62.tinypic.com/swwxhy.jpg)
+![NX](images/NX.png)
 
 之后我们可以看到下面函数的调用:   
 
@@ -102,7 +102,7 @@ noexec		[X86]
 	memblock_x86_reserve_range_setup_data();
 ```
 
-这个函数的定义也在 [arch/x86/kernel/setup.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/setup.c) 中，然后这个函数为 `setup_data` 重新映射内存并保留内存块(你可以阅读之前的 [章节](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-5.html) 了解关于 `setup_data` 的更多内容，你也可以在 [Linux kernel memory management](http://xinqiu.gitbooks.io/linux-insides-cn/content/MM/index.html) 中阅读到关于 `ioremap` and `memblock` 的更多内容)。 
+这个函数的定义也在 [arch/x86/kernel/setup.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/setup.c) 中，然后这个函数为 `setup_data` 重新映射内存并保留内存块(你可以阅读之前的 [章节](/Initialization/linux-initialization-5.md) 了解关于 `setup_data` 的更多内容，你也可以在 [Linux kernel memory management](/MM/) 中阅读到关于 `ioremap` and `memblock` 的更多内容)。 
 
 接下来我们来看看下面的条件语句:    
 
@@ -134,7 +134,7 @@ int __init acpi_mps_check(void)
 ```
 
 `acpi_mps_check` 函数检查内置的 `MPS` 又称 [多重处理器规范]((http://en.wikipedia.org/wiki/MultiProcessor_Specification)) 表。如果设置了 ` CONFIG_X86_LOCAL_APIC` 但未设置 `CONFIG_x86_MPPAARSE` ，而且传递给内核的命令行选项中有 `acpi=off`、`acpi=noirq` 或者 `pci=noacpi` 参数，那么`acpi_mps_check` 函数就会输出警告信息。如果 `acpi_mps_check` 返回了1，这就表示我们禁用了本地 [APIC](http://en.wikipedia.org/wiki/Advanced_Programmable_Interrupt_Controller) 
-,而且 `setup_clear_cpu_cap` 宏清除了当前CPU中的 `X86_FEATURE_APIC` 位。（你可以阅读 [CPU masks](https://xinqiu.gitbooks.io/linux-insides-cn/content/Concepts/linux-cpu-2.html) 了解关于CPU mask的更多内容)。
+,而且 `setup_clear_cpu_cap` 宏清除了当前CPU中的 `X86_FEATURE_APIC` 位。（你可以阅读 [CPU masks](/Concepts/linux-cpu-2.md) 了解关于CPU mask的更多内容)。
 
 早期的PCI转储
 --------------------------------------------------------------------------------  
@@ -200,7 +200,7 @@ for (bus = 0; bus < 256; bus++) {
 --------------------------------------------------------------------------------   
 
 
-在 `early_dump_pci_devices` 函数后面，有一些与可用内存和[e820](http://en.wikipedia.org/wiki/E820)相关的函数，其中 [e820](http://en.wikipedia.org/wiki/E820) 的相关信息我们在 [内核安装的第一步](http://xinqiu.gitbooks.io/linux-insides-cn/content/Booting/linux-bootstrap-2.html) 章节中整理过。   
+在 `early_dump_pci_devices` 函数后面，有一些与可用内存和[e820](http://en.wikipedia.org/wiki/E820)相关的函数，其中 [e820](http://en.wikipedia.org/wiki/E820) 的相关信息我们在 [内核安装的第一步](/Booting/linux-bootstrap-2.md) 章节中整理过。   
 ```C
 	/* update the e820_saved too */
 	e820_reserve_setup_data();
@@ -419,7 +419,7 @@ struct mpf_intel {
 
 正如我们在文档中看到的那样 - 系统 BIOS的主要功能之一就是创建MP浮点型指针结构和MP配置表。而且操作系统必须可以访问关于多处理器配置的有关信息， `mpf_intel` 中存储了多处理器配置表的物理地址(看结构体的第二个变量),然后，`smp_scan_config` 函数在指定的内存区域中循环查找 `MP floating pointer structure` 。这个函数还会检查当前字节是否指向 `SMP` 签名，然后检查签名的校验和，并且检查循环中的 `mpf->specification` 的值是1还是4(这个值只能是1或者是4):   
 
-```C7
+```C
 while (length > 0) {
 if ((*bp == SMP_MAGIC_IDENT) &&
     (mpf->length == 1) &&
@@ -471,7 +471,7 @@ void  __init early_alloc_pgt_buf(void)
 
 我们也可以使用 `readelf` 工具来找到它:    
 
-![brk area](http://oi61.tinypic.com/71lkeu.jpg) 
+![brk area](images/brk_area.png) 
 
 之后我们用 `_pa` 宏得到了新的 `brk` 区段的物理地址，我们计算页表缓冲区的基地址和结束地址。因为我们之前已经创建好了页面缓冲区，所以现在我们使用 `reserve_brk` 函数为 `brk` 区段保留内存块:   
 
@@ -506,7 +506,7 @@ for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
 }
 ```
 
-在这之后，我们使用 `memblock_set_current_limit` (你可以在[linux 内存管理 第二章节](https://github.com/MintCN/linux-insides-zh/blob/master/MM/linux-mm-2.md) 阅读关于 `memblock` 的更多内容) 函数来为 `memblock` 分配内存设置一个界限，这个界限可以是 `ISA_END_ADDRESS` 或者 `0x100000` ，然后调用 `memblock_x86_fill` 函数根据 `e820` 来填充 `memblock` 相关信息。你可以在内核初始化的时候看到这个函数运行的结果: 
+在这之后，我们使用 `memblock_set_current_limit` (你可以在[linux 内存管理 第二章节](https://github.com/hust-open-atom-club/linux-insides-zh/blob/master/MM/linux-mm-2.md) 阅读关于 `memblock` 的更多内容) 函数来为 `memblock` 分配内存设置一个界限，这个界限可以是 `ISA_END_ADDRESS` 或者 `0x100000` ，然后调用 `memblock_x86_fill` 函数根据 `e820` 来填充 `memblock` 相关信息。你可以在内核初始化的时候看到这个函数运行的结果: 
 
 ```
 MEMBLOCK configuration:
@@ -532,7 +532,7 @@ MEMBLOCK configuration:
 
 如果你有任何的疑问或者建议，你可以留言，也可以直接发消息给我[twitter](https://twitter.com/0xAX)。  
 
-**很抱歉，英语并不是我的母语，非常抱歉给您阅读带来不便，如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides](https://github.com/MintCN/linux-insides-zh).** 
+**很抱歉，英语并不是我的母语，非常抱歉给您阅读带来不便，如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides](https://github.com/hust-open-atom-club/linux-insides-zh).** 
 
 链接
 --------------------------------------------------------------------------------
@@ -541,15 +541,14 @@ MEMBLOCK configuration:
 * [NX bit](http://en.wikipedia.org/wiki/NX_bit)
 * [Documentation/kernel-parameters.txt](https://github.com/torvalds/linux/blob/master/Documentation/kernel-parameters.txt)
 * [APIC](http://en.wikipedia.org/wiki/Advanced_Programmable_Interrupt_Controller)
-* [CPU masks](http://0xax.gitbooks.io/linux-insides/content/Concepts/cpumask.html)
-* [Linux kernel memory management](http://xinqiu.gitbooks.io/linux-insides-cn/content/MM/index.html)
+* [CPU masks](/Concepts/linux-cpu-2.md)
+* [Linux kernel memory management](/MM/index.md)
 * [PCI](http://en.wikipedia.org/wiki/Conventional_PCI)
 * [e820](http://en.wikipedia.org/wiki/E820)
-* [System Management BIOS](http://en.wikipedia.org/wiki/System_Management_BIOS)
 * [System Management BIOS](http://en.wikipedia.org/wiki/System_Management_BIOS)
 * [EFI](http://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface)
 * [SMP](http://en.wikipedia.org/wiki/Symmetric_multiprocessing)
 * [MultiProcessor Specification](http://www.intel.com/design/pentium/datashts/24201606.pdf)
 * [BSS](http://en.wikipedia.org/wiki/.bss)
 * [SMBIOS specification](http://www.dmtf.org/sites/default/files/standards/documents/DSP0134v2.5Final.pdf)
-* [前一个章节](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-5.html)
+* [前一个章节](/Initialization/linux-initialization-5.md)

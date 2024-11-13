@@ -3,7 +3,7 @@ Limits on resources in Linux
 
 Each process in the system uses certain amount of different resources like files, CPU time, memory and so on.
 
-Such resources are not infinite and each process and we should have an instrument to manage it. Sometimes it is useful to know current limits for a certain resource or to change it's value. In this post we will consider such instruments that allow us to get information about limits for a process and increase or decrease such limits.
+Such resources are not infinite and each process and we should have an instrument to manage it. Sometimes it is useful to know current limits for a certain resource or to change its value. In this post we will consider such instruments that allow us to get information about limits for a process and increase or decrease such limits.
 
 We will start from userspace view and then we will look how it is implemented in the Linux kernel.
 
@@ -83,15 +83,15 @@ Now let's look at list of available resources:
 | RLIMIT_FSIZE      | the maximum size of files that a process may create                                      |
 | RLIMIT_DATA       | the maximum  size  of  the process's data segment                                        |
 | RLIMIT_STACK      | the maximum size of the process stack in bytes                                           |
-| RLIMIT_CORE       | the maximum size of a [core](http://man7.org/linux/man-pages/man5/core.5.html) file.     |
+| RLIMIT_CORE       | the maximum size of a [core](https://man7.org/linux/man-pages/man5/core.5.html) file.     |
 | RLIMIT_RSS        | the number of bytes that can be allocated for a process in RAM                           |
 | RLIMIT_NPROC      | the maximum number of processes that can be created by a user                            |
 | RLIMIT_NOFILE     | the maximum number of a file descriptor that can be opened by a process                  |
-| RLIMIT_MEMLOCK    | the maximum number of bytes of memory that may be locked into RAM by [mlock](http://man7.org/linux/man-pages/man2/mlock.2.html).|
+| RLIMIT_MEMLOCK    | the maximum number of bytes of memory that may be locked into RAM by [mlock](https://man7.org/linux/man-pages/man2/mlock.2.html).|
 | RLIMIT_AS         | the maximum size of virtual memory in bytes.                                             |
-| RLIMIT_LOCKS      | the maximum number [flock](https://linux.die.net/man/1/flock) and locking related [fcntl](http://man7.org/linux/man-pages/man2/fcntl.2.html) calls|
-| RLIMIT_SIGPENDING | maximum number of [signals](http://man7.org/linux/man-pages/man7/signal.7.html) that may be queued for a user of the calling process|
-| RLIMIT_MSGQUEUE   | the number of bytes that can be allocated for [POSIX message queues](http://man7.org/linux/man-pages/man7/mq_overview.7.html) |
+| RLIMIT_LOCKS      | the maximum number [flock](https://linux.die.net/man/1/flock) and locking related [fcntl](https://man7.org/linux/man-pages/man2/fcntl.2.html) calls|
+| RLIMIT_SIGPENDING | maximum number of [signals](https://man7.org/linux/man-pages/man7/signal.7.html) that may be queued for a user of the calling process|
+| RLIMIT_MSGQUEUE   | the number of bytes that can be allocated for [POSIX message queues](https://man7.org/linux/man-pages/man7/mq_overview.7.html) |
 | RLIMIT_NICE       | the maximum [nice](https://linux.die.net/man/1/nice) value that can be set by a process  |
 | RLIMIT_RTPRIO     | maximum real-time priority value                                                         |
 | RLIMIT_RTTIME     | maximum number of microseconds that a process may be scheduled under real-time scheduling policy without making blocking system call|
@@ -175,7 +175,7 @@ if (new_rlim) {
 check that the given `soft` limit does not exceed `hard` limit and in a case when the given resource is the maximum number of a file descriptors that hard limit is not greater than `sysctl_nr_open` value. The value of the `sysctl_nr_open` can be found via [procfs](https://en.wikipedia.org/wiki/Procfs):
 
 ```
-~$ cat /proc/sys/fs/nr_open 
+~$ cat /proc/sys/fs/nr_open
 1048576
 ```
 
@@ -207,9 +207,9 @@ That's all.
 Conclusion
 --------------------------------------------------------------------------------
 
-This is the end of the second part that describes implementation of the system calls in the Linux kernel. If you have questions or suggestions, ping me on Twitter [0xAX](https://twitter.com/0xAX), drop me an [email](anotherworldofworld@gmail.com), or just create an [issue](https://github.com/0xAX/linux-internals/issues/new).
+This is the end of the second part that describes implementation of the system calls in the Linux kernel. If you have questions or suggestions, ping me on Twitter [0xAX](https://twitter.com/0xAX), drop me an [email](mailto:anotherworldofworld@gmail.com), or just create an [issue](https://github.com/0xAX/linux-insides/issues/new).
 
-**Please note that English is not my first language and I am really sorry for any inconvenience. If you find any mistakes please send me PR to [linux-insides](https://github.com/0xAX/linux-internals).**
+**Please note that English is not my first language and I am really sorry for any inconvenience. If you find any mistakes please send me PR to [linux-insides](https://github.com/0xAX/linux-insides).**
 
 Links
 --------------------------------------------------------------------------------
@@ -218,4 +218,4 @@ Links
 * [PID](https://en.wikipedia.org/wiki/Process_identifier)
 * [ulimit](https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-ulimit)
 * [strace](https://linux.die.net/man/1/strace)
-* [POSIX message queues](http://man7.org/linux/man-pages/man7/mq_overview.7.html)
+* [POSIX message queues](https://man7.org/linux/man-pages/man7/mq_overview.7.html)

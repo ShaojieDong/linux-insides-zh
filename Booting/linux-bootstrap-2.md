@@ -3,7 +3,7 @@
 内核启动的第一步  
 --------------------------------------------------------------------------------
 
-在[上一节中](https://xinqiu.gitbooks.io/linux-insides-cn/content/Booting/linux-bootstrap-1.html)我们开始接触到内核启动代码，并且分析了初始化部分，最后我们停在了对`main`函数（`main`函数是第一个用C写的函数）的调用（`main`函数位于[arch/x86/boot/main.c](http://lxr.free-electrons.com/source/arch/x86/boot/main.c?v=3.18)）。
+在[上一节中](/Booting/linux-bootstrap-1.md)我们开始接触到内核启动代码，并且分析了初始化部分，最后我们停在了对`main`函数（`main`函数是第一个用C写的函数）的调用（`main`函数位于[arch/x86/boot/main.c](http://lxr.free-electrons.com/source/arch/x86/boot/main.c?v=3.18)）。
 
 在这一节中我们将继续对内核启动过程的研究，我们将  
 * 认识`保护模式` 
@@ -163,7 +163,7 @@ lgdt gdt
 * CPU根据`段选择子`从GDT中找到一个匹配的段描述符，然后将段描述符放入段寄存器的隐藏部分
 * 在没有使用向下扩展段的时候，那么内存段的基地址就是`段描述符中的基地址`，段描述符的`limit + 1`就是内存段的长度。如果你知道一个内存地址的`偏移`，那么在没有开启分页机制的情况下，这个内存的物理地址就是`基地址+偏移`
 
-![linear address](http://oi62.tinypic.com/2yo369v.jpg)
+![linear address](images/linear_address.png)
 
 当代码要从实模式进入保护模式的时候，需要执行下面的操作：
 
@@ -559,7 +559,7 @@ for (devno = 0x80; devno < 0x80+EDD_MBR_SIG_MAX; devno++) {
 
 如果你有任何的问题或者建议，你可以留言，也可以直接发消息给我[twitter](https://twitter.com/0xAX).
 
-**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/MintCN/linux-insides-zh) 。**
+**如果你发现文中描述有任何问题，请提交一个 PR 到 [linux-insides-zh](https://github.com/hust-open-atom-club/linux-insides-zh) 。**
 
 相关链接
 --------------------------------------------------------------------------------

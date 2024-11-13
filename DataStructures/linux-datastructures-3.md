@@ -13,7 +13,7 @@ Linux 内核中的位数组和位操作
 
 * [arch/x86/include/asm/bitops.h](https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/bitops.h)
 
-头文件。正如我上面所写的，`位图`在 Linux 内核中被广泛地使用。例如，`位数组`常常用于保存一组在线/离线处理器，以便系统支持[热插拔](https://www.kernel.org/doc/Documentation/cpu-hotplug.txt)的 CPU（你可以在 [cpumasks](https://0xax.gitbooks.io/linux-insides/content/Concepts/cpumask.html) 部分阅读更多相关知识 ），一个位数组（bit array）可以在 Linux 内核初始化等期间保存一组已分配的[中断处理](https://en.wikipedia.org/wiki/Interrupt_request_%28PC_architecture%29)。
+头文件。正如我上面所写的，`位图`在 Linux 内核中被广泛地使用。例如，`位数组`常常用于保存一组在线/离线处理器，以便系统支持[热插拔](https://www.kernel.org/doc/Documentation/cpu-hotplug.txt)的 CPU（你可以在 [cpumasks](/Concepts/linux-cpu-2.md) 部分阅读更多相关知识 ），一个位数组（bit array）可以在 Linux 内核初始化等期间保存一组已分配的[中断处理](https://en.wikipedia.org/wiki/Interrupt_request_%28PC_architecture%29)。
 
 因此，本部分的主要目的是了解位数组（bit array）是如何在 Linux 内核中实现的。让我们现在开始吧。
 
@@ -73,7 +73,7 @@ unsigned long my_bitmap[1];
 
 我认为没有必要解释这些函数的作用。从它们的名字来看，这已经很清楚了。让我们直接查看它们的实现。如果你浏览 [arch/x86/include/asm/bitops.h](https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/bitops.h) 头文件，你将会注意到这些函数中的每一个都有[原子性](https://en.wikipedia.org/wiki/Linearizability)和非原子性两种变体。在我们开始深入这些函数的实现之前，首先，我们必须了解一些有关原子（atomic）操作的知识。
 
-简而言之，原子操作保证两个或以上的操作不会并发地执行同一数据。`x86` 体系结构提供了一系列原子指令，例如， [xchg](http://x86.renejeschke.de/html/file_module_x86_id_328.html)、[cmpxchg](http://x86.renejeschke.de/html/file_module_x86_id_41.html) 等指令。除了原子指令，一些非原子指令可以在 [lock](http://x86.renejeschke.de/html/file_module_x86_id_159.html) 指令的帮助下具有原子性。现在你已经对原子操作有了足够的了解，我们可以接着探讨 `set_bit` 和 `clear_bit` 函数的实现。
+简而言之，原子操作保证两个或以上的操作不会并发地执行同一数据。`x86` 体系结构提供了一系列原子指令，例如， [xchg](https://x86.hust.openatom.club/html/file_module_x86_id_328.html)、[cmpxchg](https://x86.hust.openatom.club/html/file_module_x86_id_41.html) 等指令。除了原子指令，一些非原子指令可以在 [lock](https://x86.hust.openatom.club/html/file_module_x86_id_159.html) 指令的帮助下具有原子性。现在你已经对原子操作有了足够的了解，我们可以接着探讨 `set_bit` 和 `clear_bit` 函数的实现。
 
 我们先考虑函数的非原子性（non-atomic）变体。非原子性的 `set_bit` 和 `clear_bit` 的名字以双下划线开始。正如我们所知道的，所有这些函数都定义于 [arch/x86/include/asm/bitops.h](https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/bitops.h) 头文件，并且第一个函数就是 `__set_bit`:
 
@@ -89,7 +89,7 @@ static inline void __set_bit(long nr, volatile unsigned long *addr)
 * `nr` - 位数组中的位号（LCTT 译注：从 0开始）
 * `addr` - 我们需要置位的位数组地址
 
-注意，`addr` 参数使用 `volatile` 关键字定义，以告诉编译器给定地址指向的变量可能会被修改。 `__set_bit` 的实现相当简单。正如我们所看到的，它仅包含一行[内联汇编代码](https://en.wikipedia.org/wiki/Inline_assembler)。在我们的例子中，我们使用 [bts](http://x86.renejeschke.de/html/file_module_x86_id_25.html) 指令，从位数组中选出一个第一操作数（我们的例子中的 `nr`）所指定的位，存储选出的位的值到 [CF](https://en.wikipedia.org/wiki/FLAGS_register) 标志寄存器并设置该位（LCTT 译注：即 `nr` 指定的位置为 1）。
+注意，`addr` 参数使用 `volatile` 关键字定义，以告诉编译器给定地址指向的变量可能会被修改。 `__set_bit` 的实现相当简单。正如我们所看到的，它仅包含一行[内联汇编代码](https://en.wikipedia.org/wiki/Inline_assembler)。在我们的例子中，我们使用 [bts](https://x86.hust.openatom.club/html/file_module_x86_id_25.html) 指令，从位数组中选出一个第一操作数（我们的例子中的 `nr`）所指定的位，存储选出的位的值到 [CF](https://en.wikipedia.org/wiki/FLAGS_register) 标志寄存器并设置该位（LCTT 译注：即 `nr` 指定的位置为 1）。
 
 注意，我们了解了 `nr` 的用法，但这里还有一个参数 `addr` 呢！你或许已经猜到秘密就在 `ADDR`。 `ADDR` 是一个定义在同一个头文件中的宏，它展开为一个包含给定地址和 `+m` 约束的字符串：
 
@@ -171,7 +171,7 @@ set_bit(long nr, volatile unsigned long *addr)
 
 `第 9 位` 将会被置位。（LCTT 译注：这里的 9 是从 0 开始计数的，比如0010，按照作者的意思，其中的 1 是第 1 位）
 
-注意，所有这些操作使用 `LOCK_PREFIX` 标记，其展开为 [lock](http://x86.renejeschke.de/html/file_module_x86_id_159.html) 指令，保证该操作的原子性。
+注意，所有这些操作使用 `LOCK_PREFIX` 标记，其展开为 [lock](https://x86.hust.openatom.club/html/file_module_x86_id_159.html) 指令，保证该操作的原子性。
 
 正如我们所知，除了 `set_bit` 和 `__set_bit` 操作之外，Linux 内核还提供了两个功能相反的函数，在原子性和非原子性的上下文中清位。它们是 `clear_bit` 和 `__clear_bit`。这两个函数都定义于同一个[头文件](https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/bitops.h) 并且使用相同的参数集合。不仅参数相似，一般而言，这些函数与  `set_bit` 和 `__set_bit` 也非常相似。让我们查看非原子性 `__clear_bit` 的实现吧： 
 
@@ -182,7 +182,7 @@ static inline void __clear_bit(long nr, volatile unsigned long *addr)
 }
 ```
 
-没错，正如我们所见，`__clear_bit` 使用相同的参数集合，并包含极其相似的内联汇编代码块。它只是使用 [btr](http://x86.renejeschke.de/html/file_module_x86_id_24.html) 指令替换了 `bts`。正如我们从函数名所理解的一样，通过给定地址，它清除了给定的位。`btr` 指令表现得像 `bts`（LCTT 译注：原文这里为 btr，可能为笔误，修正为 bts）。该指令选出第一操作数所指定的位，存储它的值到 `CF` 标志寄存器，并且清除第二操作数指定的位数组中的对应位。
+没错，正如我们所见，`__clear_bit` 使用相同的参数集合，并包含极其相似的内联汇编代码块。它只是使用 [btr](https://x86.hust.openatom.club/html/file_module_x86_id_24.html) 指令替换了 `bts`。正如我们从函数名所理解的一样，通过给定地址，它清除了给定的位。`btr` 指令表现得像 `bts`（LCTT 译注：原文这里为 btr，可能为笔误，修正为 bts）。该指令选出第一操作数所指定的位，存储它的值到 `CF` 标志寄存器，并且清除第二操作数指定的位数组中的对应位。
 
 `__clear_bit` 的原子性变体为 `clear_bit`：
 
@@ -231,7 +231,7 @@ static inline int variable_test_bit(long nr, volatile const unsigned long *addr)
 }
 ```
 
-`variable_test_bit` 函数使用了与 `set_bit` 及其他函数使用的相似的参数集合。我们也可以看到执行 [bt](http://x86.renejeschke.de/html/file_module_x86_id_22.html) 和 [sbb](http://x86.renejeschke.de/html/file_module_x86_id_286.html) 指令的内联汇编代码。`bt` （或称 `bit test`）指令从第二操作数指定的位数组选出第一操作数指定的一个指定位，并且将该位的值存进标志寄存器的 [CF](https://en.wikipedia.org/wiki/FLAGS_register) 位。第二个指令 `sbb` 从第二操作数中减去第一操作数，再减去 `CF` 的值。因此，这里将一个从给定位数组中的给定位号的值写进标志寄存器的 `CF` 位，并且执行 `sbb` 指令计算： `00000000 - CF`，并将结果写进 `oldbit` 变量。
+`variable_test_bit` 函数使用了与 `set_bit` 及其他函数使用的相似的参数集合。我们也可以看到执行 [bt](https://x86.hust.openatom.club/html/file_module_x86_id_22.html) 和 [sbb](https://x86.hust.openatom.club/html/file_module_x86_id_286.html) 指令的内联汇编代码。`bt` （或称 `bit test`）指令从第二操作数指定的位数组选出第一操作数指定的一个指定位，并且将该位的值存进标志寄存器的 [CF](https://en.wikipedia.org/wiki/FLAGS_register) 位。第二个指令 `sbb` 从第二操作数中减去第一操作数，再减去 `CF` 的值。因此，这里将一个从给定位数组中的给定位号的值写进标志寄存器的 `CF` 位，并且执行 `sbb` 指令计算： `00000000 - CF`，并将结果写进 `oldbit` 变量。
 
 `constant_test_bit` 函数做了和我们在 `set_bit` 所看到的一样的事：
 
@@ -259,7 +259,7 @@ static inline void __change_bit(long nr, volatile unsigned long *addr)
 }
 ```
 
-相当简单，不是吗？ `__change_bit` 的实现和 `__set_bit` 一样，只是我们使用 [btc](http://x86.renejeschke.de/html/file_module_x86_id_23.html) 替换 `bts` 指令而已。 该指令从一个给定位数组中选出一个给定位，将该为位的值存进 `CF` 并使用求反操作改变它的值，因此值为 `1` 的位将变为 `0`，反之亦然：
+相当简单，不是吗？ `__change_bit` 的实现和 `__set_bit` 一样，只是我们使用 [btc](https://x86.hust.openatom.club/html/file_module_x86_id_23.html) 替换 `bts` 指令而已。 该指令从一个给定位数组中选出一个给定位，将该为位的值存进 `CF` 并使用求反操作改变它的值，因此值为 `1` 的位将变为 `0`，反之亦然：
 
 ```python
 >>> int(not 1)
@@ -340,7 +340,7 @@ static inline void bitmap_zero(unsigned long *dst, unsigned int nbits)
 	(__builtin_constant_p(nbits) && (nbits) <= BITS_PER_LONG)
 ```
 
-正如我们可以看到的，它检查 `nbits` 是否为编译期已知常量，并且其值不超过 `BITS_PER_LONG` 或 `64`。如果位数目没有超过一个 `long` 变量的位数，我们可以仅仅设置为 0。在其他情况，我们需要计算有多少个需要填充位数组的 `long` 变量并且使用 [memset](http://man7.org/linux/man-pages/man3/memset.3.html) 进行填充。
+正如我们可以看到的，它检查 `nbits` 是否为编译期已知常量，并且其值不超过 `BITS_PER_LONG` 或 `64`。如果位数目没有超过一个 `long` 变量的位数，我们可以仅仅设置为 0。在其他情况，我们需要计算有多少个需要填充位数组的 `long` 变量并且使用 [memset](https://man7.org/linux/man-pages/man3/memset.3.html) 进行填充。
 
 `bitmap_fill` 函数的实现和 `biramp_zero` 函数很相似，除了我们需要在给定的位数组中填写 `0xff` 或 `0b11111111`：
 
@@ -356,7 +356,7 @@ static inline void bitmap_fill(unsigned long *dst, unsigned int nbits)
 }
 ```
 
-除了 `bitmap_fill` 和 `bitmap_zero`，[include/linux/bitmap.h](https://github.com/torvalds/linux/blob/master/include/linux/bitmap.h) 头文件也提供了和 `bitmap_zero` 很相似的 `bitmap_copy`，只是仅仅使用 [memcpy](http://man7.org/linux/man-pages/man3/memcpy.3.html) 而不是  [memset](http://man7.org/linux/man-pages/man3/memset.3.html) 这点差异而已。它也提供了位数组的按位操作，像 `bitmap_and`, `bitmap_or`, `bitamp_xor`等等。我们不会探讨这些函数的实现了，因为如果你理解了本部分的所有内容，这些函数的实现是很容易理解的。无论如何，如果你对这些函数是如何实现的感兴趣，你可以打开并研究 [include/linux/bitmap.h](https://github.com/torvalds/linux/blob/master/include/linux/bitmap.h) 头文件。
+除了 `bitmap_fill` 和 `bitmap_zero`，[include/linux/bitmap.h](https://github.com/torvalds/linux/blob/master/include/linux/bitmap.h) 头文件也提供了和 `bitmap_zero` 很相似的 `bitmap_copy`，只是仅仅使用 [memcpy](https://man7.org/linux/man-pages/man3/memcpy.3.html) 而不是  [memset](https://man7.org/linux/man-pages/man3/memset.3.html) 这点差异而已。它也提供了位数组的按位操作，像 `bitmap_and`, `bitmap_or`, `bitamp_xor`等等。我们不会探讨这些函数的实现了，因为如果你理解了本部分的所有内容，这些函数的实现是很容易理解的。无论如何，如果你对这些函数是如何实现的感兴趣，你可以打开并研究 [include/linux/bitmap.h](https://github.com/torvalds/linux/blob/master/include/linux/bitmap.h) 头文件。
 
 本部分到此为止。
 
@@ -369,20 +369,20 @@ static inline void bitmap_fill(unsigned long *dst, unsigned int nbits)
 * [linked data structures](https://en.wikipedia.org/wiki/Linked_data_structure)
 * [tree data structures](https://en.wikipedia.org/wiki/Tree_%28data_structure%29) 
 * [hot-plug](https://www.kernel.org/doc/Documentation/cpu-hotplug.txt)
-* [cpumasks](https://0xax.gitbooks.io/linux-insides/content/Concepts/cpumask.html)
+* [cpumasks](/Concepts/linux-cpu-2.md)
 * [IRQs](https://en.wikipedia.org/wiki/Interrupt_request_%28PC_architecture%29)
 * [API](https://en.wikipedia.org/wiki/Application_programming_interface)
 * [atomic operations](https://en.wikipedia.org/wiki/Linearizability)
-* [xchg instruction](http://x86.renejeschke.de/html/file_module_x86_id_328.html)
-* [cmpxchg instruction](http://x86.renejeschke.de/html/file_module_x86_id_41.html)
-* [lock instruction](http://x86.renejeschke.de/html/file_module_x86_id_159.html)
-* [bts instruction](http://x86.renejeschke.de/html/file_module_x86_id_25.html)
-* [btr instruction](http://x86.renejeschke.de/html/file_module_x86_id_24.html)
-* [bt instruction](http://x86.renejeschke.de/html/file_module_x86_id_22.html)
-* [sbb instruction](http://x86.renejeschke.de/html/file_module_x86_id_286.html)
-* [btc instruction](http://x86.renejeschke.de/html/file_module_x86_id_23.html)
-* [man memcpy](http://man7.org/linux/man-pages/man3/memcpy.3.html) 
-* [man memset](http://man7.org/linux/man-pages/man3/memset.3.html)
+* [xchg instruction](https://x86.hust.openatom.club/html/file_module_x86_id_328.html)
+* [cmpxchg instruction](https://x86.hust.openatom.club/html/file_module_x86_id_41.html)
+* [lock instruction](https://x86.hust.openatom.club/html/file_module_x86_id_159.html)
+* [bts instruction](https://x86.hust.openatom.club/html/file_module_x86_id_25.html)
+* [btr instruction](https://x86.hust.openatom.club/html/file_module_x86_id_24.html)
+* [bt instruction](https://x86.hust.openatom.club/html/file_module_x86_id_22.html)
+* [sbb instruction](https://x86.hust.openatom.club/html/file_module_x86_id_286.html)
+* [btc instruction](https://x86.hust.openatom.club/html/file_module_x86_id_23.html)
+* [man memcpy](https://man7.org/linux/man-pages/man3/memcpy.3.html) 
+* [man memset](https://man7.org/linux/man-pages/man3/memset.3.html)
 * [CF](https://en.wikipedia.org/wiki/FLAGS_register)
 * [inline assembler](https://en.wikipedia.org/wiki/Inline_assembler)
 * [gcc](https://en.wikipedia.org/wiki/GNU_Compiler_Collection)

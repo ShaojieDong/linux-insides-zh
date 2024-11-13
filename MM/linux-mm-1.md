@@ -4,12 +4,12 @@
 简介
 --------------------------------------------------------------------------------
 
-内存管理是操作系统内核中最复杂的部分之一(我认为没有之一)。在[讲解内核进入点之前的准备工作](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-3.html)时，我们在调用 `start_kernel` 函数前停止了讲解。`start_kernel` 函数在内核启动第一个 `init` 进程前初始化了所有的内核特性(包括那些依赖于架构的特性)。你也许还记得在引导时建立了初期页表、识别页表和固定映射页表，但是复杂的内存管理部分还没有开始工作。当 `start_kernel` 函数被调用时，我们会看到从初期内存管理到更复杂的内存管理数据结构和技术的转变。为了更好地理解内核的初始化过程，我们需要对这些技术有更清晰的理解。本章节是内存管理框架和 API 的不同部分的概述，从 `memblock` 开始。
+内存管理是操作系统内核中最复杂的部分之一(我认为没有之一)。在[讲解内核进入点之前的准备工作](/Initialization/linux-initialization-3.md)时，我们在调用 `start_kernel` 函数前停止了讲解。`start_kernel` 函数在内核启动第一个 `init` 进程前初始化了所有的内核特性(包括那些依赖于架构的特性)。你也许还记得在引导时建立了初期页表、识别页表和固定映射页表，但是复杂的内存管理部分还没有开始工作。当 `start_kernel` 函数被调用时，我们会看到从初期内存管理到更复杂的内存管理数据结构和技术的转变。为了更好地理解内核的初始化过程，我们需要对这些技术有更清晰的理解。本章节是内存管理框架和 API 的不同部分的概述，从 `memblock` 开始。
 
 内存块
 --------------------------------------------------------------------------------
 
-内存块是在引导初期，泛用内核内存分配器还没有开始工作时对内存区域进行管理的方法之一。以前它被称为 `逻辑内存块`，但是内核接纳了 [Yinghai Lu 提供的补丁](https://lkml.org/lkml/2010/7/13/68)后改名为 `memblock` 。`x86_64` 架构上的内核会使用这个方法。我们已经在[讲解内核进入点之前的准备工作](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-3.html)时遇到过了它。现在是时候对它更加熟悉了。我们会看到它是被怎样实现的。
+内存块是在引导初期，泛用内核内存分配器还没有开始工作时对内存区域进行管理的方法之一。以前它被称为 `逻辑内存块`，但是内核接纳了 [Yinghai Lu 提供的补丁](https://lkml.org/lkml/2010/7/13/68)后改名为 `memblock` 。`x86_64` 架构上的内核会使用这个方法。我们已经在[讲解内核进入点之前的准备工作](/Initialization/linux-initialization-3.md)时遇到过了它。现在是时候对它更加熟悉了。我们会看到它是被怎样实现的。
 
 我们首先会学习 `memblock` 的数据结构。以下所有的数据结构都在 [include/linux/memblock.h](https://github.com/torvalds/linux/blob/master/include/linux/memblock.h) 头文件中定义。
 
@@ -27,7 +27,7 @@ struct memblock {
 };
 ```
 
-这个结构体包含五个域。第一个 `bottom_up` 域置为 `true` 时允许内存以自底向上模式进行分配。下一个域是 `current_limit`。 这个域描述了内存块的尺寸限制。接下来的三个域描述了内存块的类型。内存块的类型可以是：被保留，内存和物理内存(如果 `CONFIG_HAVE_MEMBLOCK_PHYS_MAP` 编译配置选项被开启)。接下来我们来看看下一个数据结构- `memblock_type` 。让我们来看看它的定义：
+这个结构体包含五个域。第一个 `bottom_up` 域置为 `true` 时允许内存以自底向上模式进行分配。下一个域是 `current_limit`，这个域描述了内存块的尺寸限制。接下来的三个域描述了内存块的类型。内存块的类型可以是：可用的、被保留的和物理内存(如果 `CONFIG_HAVE_MEMBLOCK_PHYS_MAP` 编译配置选项被开启)。接下来我们来看看下一个数据结构 - `memblock_type` 。让我们来看看它的定义：
 
 ```C
 struct memblock_type {
@@ -59,7 +59,7 @@ struct memblock_region {
 #define MEMBLOCK_HOTPLUG	0x1
 ```
 
-同时，如果 `CONFIG_HAVE_MEMBLOCK_NODE_MAP` 编译配置选项被开启， `memblock_region` 结构体也提供了整数域 - [numa](http://en.wikipedia.org/wiki/Non-uniform_memory_access) 节点选择器。
+同时，如果 `CONFIG_HAVE_MEMBLOCK_NODE_MAP` 编译配置选项被开启， `memblock_region` 结构体也包含节点ID - [numa](http://en.wikipedia.org/wiki/Non-uniform_memory_access) 节点选择器。
 
 我们将以上部分想象为如下示意图：
 
@@ -154,13 +154,13 @@ On this step the initialization of the `memblock` structure has been finished an
 
 我们已经结束了 `memblock` 结构体的初始化讲解，现在我们要开始看内存块 API 和它的实现了。就像我上面说过的，所有 `memblock` 的实现都在 [mm/memblock.c](https://github.com/torvalds/linux/blob/master/mm/memblock.c) 中。为了理解 `memblock` 是怎样被实现和工作的，让我们先看看它的用法。内核中有[很多地方](http://lxr.free-electrons.com/ident?i=memblock)用到了内存块。举个例子，我们来看看 [arch/x86/kernel/e820.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/e820.c#L1061) 中的 `memblock_x86_fill` 函数。这个函数使用了 [e820](http://en.wikipedia.org/wiki/E820) 提供的内存映射并使用 `memblock_add` 函数在 `memblock` 中添加了内核保留的内存区域。既然我们首先遇到了 `memblock_add` 函数，让我们从它开始讲解吧。
 
-这个函数获取了物理基址和内存区域的大小并把它们加到了 `memblock` 中。`memblock_add` 函数本身没有做任何特殊的事情，它只是调用了
+这个函数获取了物理基址和内存区域的大小并把它们加到了 `memblock` 中。`memblock_add` 函数本身没有做任何特殊的事情，它只是调用了函数
 
 ```C
 memblock_add_range(&memblock.memory, base, size, MAX_NUMNODES, 0);
 ```
 
-函数。我们将内存块类型 - `memory`，内存基址和内存区域大小，节点的最大数目和标志传进去。如果 `CONFIG_NODES_SHIFT` 没有被设置，最大节点数目就是 1，否则是 `1 << CONFIG_NODES_SHIFT`。`memblock_add_range` 函数将新的内存区域加到了内存块中，它首先检查传入内存区域的大小，如果是 0 就直接返回。然后，这个函数会用 `memblock_type` 来检查 `memblock` 中的内存区域是否存在。如果不存在，我们就简单地用给定的值填充一个新的 `memory_region` 然后返回(我们已经在[对内核内存管理框架的初览](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-3.html)中看到了它的实现)。如果 `memblock_type` 不为空，我们就会使用提供的 `memblock_type` 将新的内存区域加到 `memblock` 中。
+。我们将内存块类型 - `memory`，内存基址和内存区域大小，```MAX_NUMNODES```和标志传进去。如果 `CONFIG_NODES_SHIFT` 没有被设置，```MAX_NUMNODES```就是 1，否则是 `1 << CONFIG_NODES_SHIFT`。`memblock_add_range` 函数将新的内存区域加到了内存块中，它首先检查传入内存区域的大小，如果是 0 就直接返回。然后，这个函数会用 `memblock_type` 来检查 `memblock` 中的内存区域是否存在。如果不存在，我们就简单地用给定的值填充一个新的 `memory_region` 然后返回(我们已经在[对内核内存管理框架的初览](/Initialization/linux-initialization-3.md)中看到了它的实现)。如果 `memblock_type` 不为空，我们就会使用提供的 `memblock_type` 将新的内存区域加到 `memblock` 中。
 
 首先，我们获取了内存区域的结束点：
 
@@ -392,7 +392,7 @@ memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
 
 然后你将看到类似下图的画面：
 
-![Memblock](http://oi57.tinypic.com/1zoj589.jpg)
+![Memblock](images/memblock.png)
 
 内存块技术也支持 [debugfs](http://en.wikipedia.org/wiki/Debugfs) 。如果你不是在 `X86` 架构下运行内核，你可以访问：
 
@@ -405,9 +405,9 @@ memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
 结束语
 --------------------------------------------------------------------------------
 
-讲解内核内存管理的第一部分到此结束，如果你有任何的问题或者建议，你可以直接发消息给我[twitter](https://twitter.com/0xAX)，也可以给我发[邮件](anotherworldofworld@gmail.com)或是直接创建一个 [issue](https://github.com/MintCN/linux-insides-zh/issues/new)。
+讲解内核内存管理的第一部分到此结束，如果你有任何的问题或者建议，你可以直接发消息给我[twitter](https://twitter.com/0xAX)，也可以给我发[邮件](mailto:anotherworldofworld@gmail.com)或是直接创建一个 [issue](https://github.com/hust-open-atom-club/linux-insides-zh/issues/new)。
 
-**英文不是我的母语。如果你发现我的英文描述有任何问题，请提交一个PR到[linux-insides](https://github.com/MintCN/linux-insides-zh).**
+**英文不是我的母语。如果你发现我的英文描述有任何问题，请提交一个PR到[linux-insides](https://github.com/hust-open-atom-club/linux-insides-zh).**
 
 相关连接：
 --------------------------------------------------------------------------------
@@ -415,4 +415,4 @@ memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
 * [e820](http://en.wikipedia.org/wiki/E820)
 * [numa](http://en.wikipedia.org/wiki/Non-uniform_memory_access)
 * [debugfs](http://en.wikipedia.org/wiki/Debugfs)
-* [对内核内存管理框架的初览](http://xinqiu.gitbooks.io/linux-insides-cn/content/Initialization/linux-initialization-3.html)
+* [对内核内存管理框架的初览](/Initialization/linux-initialization-3.md)
